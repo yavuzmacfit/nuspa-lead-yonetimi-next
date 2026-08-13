@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# NuSpa Lead Yönetimi (Next.js Prototip)
 
-## Getting Started
+Ürün özelliklerini görselleştirmek ve hızlıca deneme/karar almak için hazırlanmış
+bağımsız bir prototip. `nuspa-lead-yonetimi` (Express + SQLite) projesinin
+Next.js'e taşınmış, **veritabanı kullanmayan** versiyonudur.
 
-First, run the development server:
+## Mimari
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Next.js App Router** (TypeScript), hem sayfaları hem `/api/nuspa/*` altındaki
+  API route handler'larını barındırır.
+- **DB yok.** Tüm veri (`src/lib/store.ts`) sunucu süreci boyunca bellekte tutulan
+  düz JS dizileriyle temsil edilir. `src/lib/seed.ts` her sunucu başlangıcında
+  örnek veriyi oluşturur (`src/lib/services/leadService.ts` vb. gerçek servis
+  fonksiyonları üzerinden — demo akışları gerçek iş kurallarını uygular).
+- Sunucu açık kaldığı sürece yapılan değişiklikler (yeni lead, arama sonucu vb.)
+  bellekte kalır; `npm run dev`'i yeniden başlattığında veri sıfırdan seed edilir.
+- Bu yaklaşımın amacı: yeni bir alan/özellik eklemek için migration, seed script
+  güncellemesi veya db dosyası sıfırlama gerektirmemesi — sadece `src/lib/store.ts`
+  ve ilgili servis/sayfa dosyalarını düzenlemek yeterli.
+
+## Klasör yapısı
+
+```
+src/
+  app/                    Next.js sayfaları (leads, calendar, lost-leads, admin/*)
+  app/api/nuspa/          Eski Express route'larıyla birebir eşleşen API katmanı
+  components/             Sidebar/Topbar (Shell), modallar, takvim görünümleri, admin tabloları
+  lib/
+    store.ts              Bellek-içi veri deposu (Table<T> + tüm koleksiyonlar)
+    seed.ts                Demo veri
+    services/              İş mantığı (leadService, reportService, taskService, ...)
+    AppDataContext.tsx      Ortak meta veri + seçili satış danışmanı + toast context'i
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Çalıştırma
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+`http://localhost:3000` (meşgulse Next.js otomatik başka porta geçer).
 
-## Learn More
+## Notlar
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Görsel tasarım, mevcut `nuspa-lead-yonetimi` projesindeki CSS ile birebir aynı
+  tutulmuştur (`src/app/globals.css`).
+- "Kişileri Dışa Aktar" ve "Toplu Güncelle" butonları şu an placeholder'dır.
