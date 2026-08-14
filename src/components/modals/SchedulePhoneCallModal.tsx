@@ -46,6 +46,7 @@ export default function SchedulePhoneCallModal({
   const [rejectExplanation, setRejectExplanation] = useState("");
   const [calling, setCalling] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showConflictConfirm, setShowConflictConfirm] = useState(false);
   const selectedRejectReason = rejectReasons.find((r) => r.label === rejectReasonLabel);
   const [activeCall, setActiveCall] = useState<PendingCallActivity | null>(null);
   const [elapsed, setElapsed] = useState(0);
@@ -128,6 +129,28 @@ export default function SchedulePhoneCallModal({
       toast("Telefon araması tarihi ve saati zorunludur.", true);
       return;
     }
+
+    setSaving(true);
+    try {
+      const dueAtIso = new Date(`${date}T${time}`).toISOString();
+      const params = new URLSearchParams({ dueAt: dueAtIso, leadId: String(lead.id) });
+      if (closingTaskId) params.set("excludeTaskId", String(closingTaskId));
+      const conflict = await apiFetch<{ hasConflict: boolean }>(`/api/nuspa/tasks/conflicts?${params.toString()}`, {
+        repId: currentRepId,
+      });
+      if (conflict.hasConflict) {
+        setSaving(false);
+        setShowConflictConfirm(true);
+        return;
+      }
+    } catch {
+      // Çakışma kontrolü başarısız olsa bile planlamayı engellemeyelim.
+    }
+
+    await actuallyScheduleTask();
+  }
+
+  async function actuallyScheduleTask() {
     setSaving(true);
     try {
       await closeExistingTask("TAKIP_GOREVI_OLUSTURULDU");
@@ -182,6 +205,7 @@ export default function SchedulePhoneCallModal({
   }
 
   return (
+    <>
     <Modal onClose={onClose}>
       <div className="modal-header">
         <h2>TELEFON ARAMASI PLANLA</h2>
@@ -286,5 +310,32 @@ export default function SchedulePhoneCallModal({
         </div>
       </div>
     </Modal>
+
+    {showConflictConfirm && (
+      <Modal onClose={() => setShowConflictConfirm(false)}>
+        <div className="modal-body" style={{ textAlign: "center", padding: "36px 30px" }}>
+          <h2 style={{ fontSize: 20, marginBottom: 14 }}>Tarih veya saati değiştirmek ister misin?</h2>
+          <p style={{ color: "var(--muted)", fontSize: 13.5, lineHeight: 1.6, marginBottom: 24 }}>
+            Seçtiğin tarih ve saatte bir etkinlik gözükmektedir. Değiştirmek için Evet, bulunan etkinliğin üstüne
+            eklemek için Hayır&apos;a basınız.
+          </p>
+          <div style={{ display: "flex", justifyContent: "center", gap: 10 }}>
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                setShowConflictConfirm(false);
+                actuallyScheduleTask();
+              }}
+            >
+              Hayır
+            </button>
+            <button className="btn btn-primary" onClick={() => setShowConflictConfirm(false)}>
+              Evet
+            </button>
+          </div>
+        </div>
+      </Modal>
+    )}
+    </>
   );
 }

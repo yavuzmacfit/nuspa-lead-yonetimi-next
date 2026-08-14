@@ -70,6 +70,21 @@ export function checkScheduleConflicts(salesRepId: number, dueAtIso: string, exc
   };
 }
 
+/** Seçilen slotta bu lead'in zaten başka aktif bir görevi var mı? */
+export function checkLeadScheduleConflict(leadId: number, dueAtIso: string, excludeTaskId?: number): NuSpaTaskRow[] {
+  const due = new Date(dueAtIso);
+  const start = due.getTime();
+  const end = start + TASK_DEFAULT_DURATION_MIN * 60 * 1000;
+
+  return db.NuSpaTask
+    .where((t) => t.leadId === leadId && t.status === "ACIK" && t.dueAt !== null && t.id !== excludeTaskId)
+    .filter((t) => {
+      const tStart = new Date(t.dueAt as string).getTime();
+      const tEnd = tStart + TASK_DEFAULT_DURATION_MIN * 60 * 1000;
+      return tStart < end && tEnd > start;
+    });
+}
+
 export function getOpenMainTask(leadId: number): NuSpaTaskRow | undefined {
   return db.NuSpaTask
     .where((t) => t.leadId === leadId && t.status === "ACIK")

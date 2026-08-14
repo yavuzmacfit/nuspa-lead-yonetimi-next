@@ -1,4 +1,17 @@
-import { addDays, CAL_HOUR_END, CAL_HOUR_START, CAL_ROW_H, dateKey, EnrichedTask, mondayOf, statusClass } from "@/lib/calendarUtils";
+"use client";
+
+import { useEffect, useState } from "react";
+import {
+  addDays,
+  CAL_HOUR_END,
+  CAL_HOUR_START,
+  CAL_ROW_H,
+  dateKey,
+  EnrichedTask,
+  eventToneClass,
+  layoutDayEvents,
+  mondayOf,
+} from "@/lib/calendarUtils";
 
 const DAY_NAMES = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"];
 
@@ -24,8 +37,15 @@ export default function HourGridView({
   const hourCount = CAL_HOUR_END - CAL_HOUR_START + 1;
   const hourLabels = Array.from({ length: hourCount }, (_, i) => String(CAL_HOUR_START + i).padStart(2, "0"));
   const days = Array.from({ length: colsCount }, (_, i) => addDays(startDay, i));
+  // grid-body içindeki flex stretch, max-height ile kısıtlanan görünür alana göre
+  // hesaplanıp gün sütunlarını kırpabiliyor; asıl içerik yüksekliğini elle veriyoruz.
+  const gridHeight = hourCount * CAL_ROW_H;
 
-  const now = new Date();
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(id);
+  }, []);
   const nowKey = dateKey(now);
   const nowTop = (now.getHours() + now.getMinutes() / 60 - CAL_HOUR_START) * CAL_ROW_H;
   const showNowLine = now.getHours() >= CAL_HOUR_START && now.getHours() <= CAL_HOUR_END;
@@ -53,25 +73,44 @@ export default function HourGridView({
         })}
       </div>
       <div className="grid-body">
-        <div className="hour-axis">
+        <div className="hour-axis" style={{ height: gridHeight }}>
           {hourLabels.map((h) => (
             <div className="hour-label" key={h}>
-              {h}
+              <span className="hour-label-text">{h}</span>
             </div>
           ))}
         </div>
-        <div className="day-columns">
+        <div className="day-columns" style={{ height: gridHeight }}>
           {days.map((d, i) => {
             const isToday = dateKey(d) === todayKey;
             const dayTasks = byDate[dateKey(d)] || [];
+            const tops = dayTasks.map((t) => {
+              const dt = new Date(t.dueAt as string);
+              const hourFrac = Math.max(CAL_HOUR_START, Math.min(CAL_HOUR_END, dt.getHours() + dt.getMinutes() / 60));
+              return (hourFrac - CAL_HOUR_START) * CAL_ROW_H;
+            });
+            const layout = layoutDayEvents(tops.map((top) => ({ top })));
             return (
               <div className={`day-col${isToday ? " today" : ""}`} key={i}>
-                {dayTasks.map((t) => {
+                {dayTasks.map((t, idx) => {
                   const dt = new Date(t.dueAt as string);
-                  const hourFrac = Math.max(CAL_HOUR_START, Math.min(CAL_HOUR_END, dt.getHours() + dt.getMinutes() / 60));
-                  const top = (hourFrac - CAL_HOUR_START) * CAL_ROW_H;
+                  const top = tops[idx];
+                  const { col, totalCols } = layout[idx];
+                  const style: { top: number; zIndex: number; left?: string; width?: string } = {
+                    top,
+                    zIndex: col + 1,
+                  };
+                  if (totalCols > 1) {
+                    style.left = `calc(4px + (100% - 8px) * ${col} / ${totalCols})`;
+                    style.width = `calc((100% - 8px) / ${totalCols} - 4px)`;
+                  }
                   return (
-                    <div className={`event-block ${statusClass(t)}`} style={{ top }} title={t.type} key={t.id}>
+                    <div
+                      className={`event-block ${eventToneClass(t)}${totalCols > 1 ? " overlap" : ""}`}
+                      style={style}
+                      title={t.type}
+                      key={t.id}
+                    >
                       <b>
                         {t.memberName} {t.memberSurname}
                       </b>

@@ -14,7 +14,7 @@ type View = "month" | "week" | "day" | "agenda";
 export default function CalendarPage() {
   const { locations, taskTypes, reps, toast } = useAppData();
   const [tasks, setTasks] = useState<TaskRow[]>([]);
-  const [view, setView] = useState<View>("month");
+  const [view, setView] = useState<View>("week");
   const [weekOffset, setWeekOffset] = useState(0);
   const [monthOffset, setMonthOffset] = useState(0);
   const [dayOffset, setDayOffset] = useState(0);
