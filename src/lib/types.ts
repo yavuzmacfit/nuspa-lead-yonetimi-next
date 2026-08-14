@@ -38,13 +38,6 @@ export interface RejectReason {
   isActive: number;
 }
 
-export interface ReleaseReason {
-  id: number;
-  code: string;
-  label: string;
-  isActive: number;
-}
-
 export interface TaskTypeDefinition {
   id: number;
   code: string;
@@ -56,6 +49,7 @@ export interface TaskTypeDefinition {
 export interface ClosureReason {
   id: number;
   label: string;
+  taskName: string | null;
   isActive: number;
 }
 
@@ -115,15 +109,3 @@ export interface TaskRow {
   isOverdue: boolean;
 }
 
-export interface LostLead {
-  id: number;
-  leadId: number;
-  salesRepId: number;
-  salesRepName: string | null;
-  memberName: string | null;
-  memberSurname: string | null;
-  currentOwnerName: string | null;
-  locationName: string | null;
-  reasonLabel: string | null;
-  releasedAt: string | null;
-}

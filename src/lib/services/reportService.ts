@@ -175,38 +175,6 @@ export function getLeadDetail(leadId: number) {
   return { lead: leadWithDetails, transactions: transactionsWithSource, activities, tasks, assignments, saleFlows };
 }
 
-/** Bölüm 11.2: Üzerimden Giden Leadler. */
-export function getLostLeads(rep: RepContext) {
-  let rows = db.NuSpaLeadAssignment.where((a) => a.releasedAt !== null);
-
-  if (rep.role === "LOKASYON_YONETICISI" && rep.locationId) {
-    rows = rows.filter((a) => a.locationId === rep.locationId);
-  } else {
-    rows = rows.filter((a) => a.salesRepId === rep.id);
-  }
-
-  return rows
-    .sort((a, b) => (b.releasedAt ?? "").localeCompare(a.releasedAt ?? ""))
-    .map((a) => {
-      const lead = db.NuSpaLead.find(a.leadId);
-      const member = lead ? memberOf(lead.memberId) : undefined;
-      const salesRep = db.SalesRep.find(a.salesRepId);
-      const curAssign = db.NuSpaLeadAssignment.findOne((x) => x.leadId === a.leadId && x.releasedAt === null);
-      const newOwner = curAssign ? db.SalesRep.find(curAssign.salesRepId) : undefined;
-      const loc = a.locationId ? db.NuSpaLocation.find(a.locationId) : undefined;
-      const reason = a.releaseReasonCode ? db.NuSpaReleaseReason.findOne((r) => r.code === a.releaseReasonCode) : undefined;
-      return {
-        ...a,
-        salesRepName: salesRep?.name ?? null,
-        memberName: member?.name ?? null,
-        memberSurname: member?.surname ?? null,
-        currentOwnerName: newOwner?.name ?? null,
-        locationName: loc?.name ?? null,
-        reasonLabel: reason?.label ?? null,
-      };
-    });
-}
-
 /** Bölüm 15: temel raporlama sayaçları. */
 export function getSummary(rep: RepContext) {
   const visibleLeads = db.NuSpaLead.where((l) => isVisible(rep, l.locationId, l.tier));

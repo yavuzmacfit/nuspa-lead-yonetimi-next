@@ -4,6 +4,7 @@ import {
   CALENDAR_BLOCKED_END_HOUR,
   CALENDAR_BLOCKED_START_HOUR,
   CALL_BACK_MAX_DAYS,
+  LEAD_STATUS,
   TASK_STATUS,
 } from "../constants";
 
@@ -104,8 +105,38 @@ export function createTask(input: {
     createdAt: nowIso(),
     updatedAt: nowIso(),
   });
-  db.NuSpaLead.update(input.leadId, { openTaskId: task.id, updatedAt: nowIso() });
+  // Ret/Satış/Pasif sonrası bu lead için yeni bir görev planlanması, Bölüm
+  // 13.3'teki "yeni talep -> tekrar Aktif" kuralıyla aynı mantıkla lead'i
+  // tekrar Aktif statüsüne çeker.
+  db.NuSpaLead.update(input.leadId, { openTaskId: task.id, status: LEAD_STATUS.AKTIF, updatedAt: nowIso() });
+
+  // Bir göreve satış danışmanı atanması, o lead'in sahipliğini de o danışmana
+  // taşır (Satış Temsilcisi kolonunda görünen kişi ile görevi üstlenen kişi
+  // her zaman aynı olsun diye). Farklı bir sahip varsa serbest bırakılır.
+  if (input.assignedToId) {
+    assignLeadOwner(input.leadId, input.assignedToId);
+  }
+
   return task;
+}
+
+function assignLeadOwner(leadId: number, salesRepId: number) {
+  const currentActive = db.NuSpaLeadAssignment.findOne((a) => a.leadId === leadId && a.releasedAt === null);
+  if (currentActive && currentActive.salesRepId === salesRepId) return;
+
+  if (currentActive) {
+    db.NuSpaLeadAssignment.update(currentActive.id, { releasedAt: nowIso(), releaseReasonCode: "YENI_GOREV_ATANDI" });
+  }
+  const lead = db.NuSpaLead.find(leadId);
+  db.NuSpaLeadAssignment.insert({
+    leadId,
+    salesRepId,
+    locationId: lead?.locationId ?? null,
+    assignedAt: nowIso(),
+    releasedAt: null,
+    releaseReasonCode: null,
+    releaseNote: null,
+  });
 }
 
 export function closeTask(

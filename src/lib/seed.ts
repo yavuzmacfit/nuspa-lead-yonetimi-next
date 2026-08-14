@@ -108,19 +108,6 @@ function seedReasons() {
   }
   console.log("NuSpa'ya özgü Ret Tanımları eklendi.");
 
-  const releaseReasons: [string, string][] = [
-    ["MANUEL_DEVIR", "Manuel olarak başka satış danışmanına aktarıldı"],
-    ["YENI_TRANSACTION_LOKASYON_DEGISTI", "Yeni Lead Transaction nedeniyle lokasyonu değişti"],
-    ["MANUEL_GIRIS_BASKA_LOKASYON", "Manuel lead girişiyle başka lokasyona alındı"],
-    ["KULLANICI_PASIF", "Kullanıcı işten ayrıldı veya pasife alındı"],
-    ["OTOMATIK_KURAL", "Konfigüre edilmiş otomatik serbest bırakma kuralı çalıştı"],
-    ["DIGER", "Diğer / açıklamalı neden"],
-  ];
-  for (const [code, label] of releaseReasons) {
-    db.NuSpaReleaseReason.insert({ code, label, isActive: 1 });
-  }
-  console.log("Sahiplik çıkış sebepleri eklendi.");
-
   const taskTypes: [string, string, string][] = [
     ["TELEFON_ARAMASI", "Telefon Araması", "Alotech ile aranabilmeli"],
     ["SATIS", "Satış", "Masaj paketi satışı; close sale ile atanır"],
@@ -142,7 +129,7 @@ function seedReasons() {
     "Diğer",
   ];
   for (const label of closureReasons) {
-    db.NuSpaClosureReason.insert({ label, isActive: 1 });
+    db.NuSpaClosureReason.insert({ label, taskName: null, isActive: 1 });
   }
   console.log("Neden Kodları (görev kapama sebepleri) eklendi.");
 }
@@ -329,6 +316,55 @@ function seedDemoLeads() {
     gsmAreaCode: "541",
     gsmNo: "4440009",
   });
+
+  // 10-29) Listenin dolu görünmesi için üzerinde hiçbir görev/arama olmayan
+  // 20 ek havuz lead'i eklenir (sadece acceptLeadTransaction; startCall/
+  // submitCallResult çağrılmaz, bu yüzden openTaskType hep boş kalır).
+  // Kasıtlı olarak nuspaLocation verilmez: lokasyon atama merdiveni bu
+  // yüzden DEFAULT adımına düşer (DigitalNuSpaLocation) ve lead, hangi
+  // satış danışmanı/rolü seçili olursa olsun görünür olur (Bölüm 5).
+  const extraLeads: { name: string; surname: string; gsmNo: string; sourceKey: "website" | "sosyal" | "referans" | "cagri" | "kulup" }[] = [
+    { name: "Zeynep", surname: "Aksoy", gsmNo: "4440010", sourceKey: "website" },
+    { name: "Mert", surname: "Yıldırım", gsmNo: "4440011", sourceKey: "sosyal" },
+    { name: "Ece", surname: "Korkmaz", gsmNo: "4440012", sourceKey: "referans" },
+    { name: "Burak", surname: "Çelik", gsmNo: "4440013", sourceKey: "cagri" },
+    { name: "Selin", surname: "Demirtaş", gsmNo: "4440014", sourceKey: "kulup" },
+    { name: "Kaan", surname: "Öztek", gsmNo: "4440015", sourceKey: "website" },
+    { name: "Gizem", surname: "Aydın", gsmNo: "4440016", sourceKey: "sosyal" },
+    { name: "Emre", surname: "Polat", gsmNo: "4440017", sourceKey: "referans" },
+    { name: "Aslı", surname: "Yavuz", gsmNo: "4440018", sourceKey: "cagri" },
+    { name: "Barış", surname: "Kurt", gsmNo: "4440019", sourceKey: "kulup" },
+    { name: "Nil", surname: "Er", gsmNo: "4440020", sourceKey: "website" },
+    { name: "Ozan", surname: "Bulut", gsmNo: "4440021", sourceKey: "sosyal" },
+    { name: "Ceren", surname: "Şen", gsmNo: "4440022", sourceKey: "referans" },
+    { name: "Tolga", surname: "Aktaş", gsmNo: "4440023", sourceKey: "cagri" },
+    { name: "Buse", surname: "Güler", gsmNo: "4440024", sourceKey: "kulup" },
+    { name: "Serkan", surname: "Uçar", gsmNo: "4440025", sourceKey: "website" },
+    { name: "İrem", surname: "Tunç", gsmNo: "4440026", sourceKey: "sosyal" },
+    { name: "Volkan", surname: "Öndeş", gsmNo: "4440027", sourceKey: "referans" },
+    { name: "Duygu", surname: "Kaplan", gsmNo: "4440028", sourceKey: "cagri" },
+    { name: "Hakan", surname: "Sezer", gsmNo: "4440029", sourceKey: "kulup" },
+  ];
+  const extraSourceMap: Record<string, { id: number; detailName: string }> = {
+    website: { id: websiteId, detailName: "Genel İletişim Formu" },
+    sosyal: { id: sosyalId, detailName: "Instagram" },
+    referans: { id: referansId, detailName: "Mevcut Üye Referansı" },
+    cagri: { id: cagriId, detailName: "Gelen Çağrı" },
+    kulup: { id: kulupId, detailName: "Resepsiyon" },
+  };
+  const areaCodes = ["530", "531", "532", "533", "534", "535", "536", "537", "538", "539", "540", "541"];
+  extraLeads.forEach((l, i) => {
+    const s = extraSourceMap[l.sourceKey];
+    acceptLeadTransaction({
+      sourceId: s.id,
+      sourceDetailId: detail(s.id, s.detailName),
+      name: l.name,
+      surname: l.surname,
+      gsmAreaCode: areaCodes[i % areaCodes.length],
+      gsmNo: l.gsmNo,
+    });
+  });
+  console.log("20 ek havuz lead'i (görevsiz, herkese görünür) eklendi.");
 
   // Birkaç demo lead'in geçmiş fitness üyeliği mock verisiyle doldurulması.
   const melisMember = db.Member.findOne((m) => m.gsmAreaCode === "535" && m.gsmNo === "4440003");

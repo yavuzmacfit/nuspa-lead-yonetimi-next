@@ -133,6 +133,7 @@ main.content-area { flex: 1; display: flex; flex-direction: column; min-width: 0
 .btn-ghost { background: #f2f3f5; color: #4b5563; }
 .btn-add { background: #17a589; color: white; }
 .btn-warn { background: #d64545; color: white; }
+.btn-cancel { background: #e0723a; color: white; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
 /* ---------- Toolbar / result count ---------- */
@@ -155,13 +156,34 @@ main.content-area { flex: 1; display: flex; flex-direction: column; min-width: 0
 .col-check-item.locked { color: var(--muted); cursor: not-allowed; }
 .col-check-item.locked input { cursor: not-allowed; }
 
+/* ---------- Filtre ayarları (filter visibility) ---------- */
+.leads-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 4px; }
+.filter-settings { position: relative; flex-shrink: 0; }
+.filter-settings-btn {
+  display: flex; align-items: center; gap: 8px; border: none; background: var(--blue); color: white;
+  border-radius: 6px; padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.filter-settings-btn .chevron { font-size: 10px; }
+.filter-settings-panel {
+  position: absolute; top: calc(100% + 6px); right: 0; width: 260px; max-height: 420px;
+  overflow-y: auto; background: white; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(20,22,28,0.16); padding: 10px; z-index: 70;
+}
+
 .perm-yes { color: #1a9c53; font-weight: 600; font-size: 12.5px; }
 .perm-no { color: var(--muted); font-size: 12.5px; }
 .task-date.overdue { color: #d64545; }
 
 /* ---------- Table ---------- */
 .table-scroll { overflow-x: auto; border-radius: 10px; }
-table { width: 100%; border-collapse: collapse; background: white; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; border: 1px solid var(--border); border-radius: 10px; }
+/* Köşe yuvarlaklığı overflow:hidden yerine doğrudan kenar hücrelere uygulanır.
+   overflow:hidden hem sticky sütunları hem de satır içi açılır menüleri
+   (dropdown) kırpardı; bu yüzden tabloda hiçbir overflow clip kullanılmaz. */
+thead tr:first-child th:first-child { border-top-left-radius: 9px; }
+thead tr:first-child th:last-child { border-top-right-radius: 9px; }
+tbody tr:last-child td:first-child { border-bottom-left-radius: 9px; }
+tbody tr:last-child td:last-child { border-bottom-right-radius: 9px; }
 thead th {
   text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.3px; color: var(--muted);
   background: #fafbfc; padding: 11px 14px; border-bottom: 1px solid var(--border); font-weight: 700; white-space: nowrap;
@@ -169,6 +191,12 @@ thead th {
 tbody td { padding: 12px 14px; font-size: 13.5px; border-bottom: 1px solid #f0f1f4; color: #374151; vertical-align: middle; }
 tbody tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: #fafbfe; }
+
+.sticky-action-col {
+  position: sticky; right: 0; background: white; box-shadow: -6px 0 8px -6px rgba(20, 22, 28, 0.12);
+}
+thead .sticky-action-col { background: #fafbfc; z-index: 2; }
+tbody tr:hover .sticky-action-col { background: #fafbfe; }
 
 .name-cell strong { display: block; color: #1f2430; font-size: 13.5px; }
 .name-cell span { display: block; font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -181,10 +209,8 @@ tbody tr:hover { background: #fafbfe; }
 
 .owner-pool { color: var(--muted); font-style: italic; font-size: 12.5px; }
 
-.task-cell { font-size: 12.5px; }
-.task-cell .task-date { color: #1f2430; font-weight: 600; }
-.task-cell .task-type { color: var(--muted); display: block; margin-top: 1px; }
-.task-cell.overdue .task-date { color: #d64545; }
+.task-date { display: block; color: #1f2430; font-weight: 600; font-size: 12.5px; }
+.task-type { display: block; color: var(--muted); font-size: 12.5px; margin-top: 1px; }
 
 .row-action { display: flex; gap: 6px; }
 .action-btn {
@@ -192,6 +218,46 @@ tbody tr:hover { background: #fafbfe; }
   font-size: 12px; font-weight: 600; color: var(--blue); cursor: pointer; white-space: nowrap;
 }
 .action-btn.primary { background: var(--blue); color: white; border-color: var(--blue); }
+
+.task-icon-indicator {
+  border: 1px solid var(--border); background: white; border-radius: 6px; width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center; cursor: default; flex-shrink: 0;
+}
+.task-icon-indicator.task-icon-blue { color: var(--blue); }
+.task-icon-indicator.task-icon-teal { color: var(--teal); }
+.task-icon-indicator.task-icon-muted { color: #8a90a0; }
+
+.row-menu-btn {
+  border: 1px solid var(--border); background: white; border-radius: 6px; width: 30px; height: 30px;
+  font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; line-height: 1; flex-shrink: 0;
+}
+.row-menu-btn:hover { background: #fafbfc; }
+.row-menu-panel {
+  position: fixed; width: 220px; background: white; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(20,22,28,0.16); padding: 6px; z-index: 200;
+}
+.row-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none;
+  padding: 9px 10px; border-radius: 6px; font-size: 13.5px; color: var(--text); cursor: pointer; text-align: left;
+}
+.row-menu-item:hover { background: #fafbfc; }
+.row-menu-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
+
+.icon-menu-btn {
+  border: 1px solid var(--border); background: white; border-radius: 6px; width: 30px; height: 30px;
+  font-size: 15px; font-weight: 700; color: #4b5563; cursor: pointer; line-height: 1; flex-shrink: 0;
+}
+.icon-menu-btn:hover { background: #f4f5f7; }
+.row-menu-panel {
+  position: fixed; width: 232px; background: white; border: 1px solid var(--border); border-radius: 10px;
+  box-shadow: 0 14px 34px rgba(20, 22, 28, 0.18); padding: 6px; z-index: 300;
+}
+.row-menu-item {
+  display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 6px;
+  font-size: 13px; color: #374151; cursor: pointer; white-space: nowrap;
+}
+.row-menu-item:hover { background: #fafbfc; }
+.row-menu-item .row-menu-icon { font-size: 15px; width: 18px; text-align: center; flex-shrink: 0; }
 
 /* icon table (admin) */
 table.admin thead th { font-size: 13px; font-weight: 600; color: #8a90a0; background: #fafbfc; }
@@ -308,7 +374,7 @@ table.admin thead th { font-size: 13px; font-weight: 600; color: #8a90a0; backgr
 .checkbox-row input { width: 15px; height: 15px; }
 
 .step-cards { display: flex; gap: 10px; margin-bottom: 6px; }
-.step-card { flex: 1; border: 2px solid var(--border); border-radius: 8px; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; font-size: 11.5px; font-weight: 600; color: #6b7280; }
+.step-card { flex: 1; border: 2px solid var(--border); border-radius: 8px; padding: 14px 8px; display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; font-size: 11.5px; font-weight: 600; color: #6b7280; text-align: center; }
 .step-card .step-icon { font-size: 20px; }
 .step-card.selected { border-color: var(--blue); background: var(--blue-bg); color: var(--blue); }
 .step-card.disabled { opacity: 0.35; cursor: not-allowed; }
@@ -318,7 +384,46 @@ table.admin thead th { font-size: 13px; font-weight: 600; color: #8a90a0; backgr
 .lead-info-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
 .lead-info-row .lead-source { font-size: 15px; font-weight: 600; color: #1f2430; line-height: 1.35; max-width: 220px; }
 .ara-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--teal-bg); color: var(--teal); font-weight: 700; font-size: 13.5px; padding: 9px 16px; border-radius: 8px; border: none; cursor: pointer; margin-bottom: 8px; }
+.ara-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 .phone-num { font-size: 15px; font-weight: 600; color: #1f2430; text-align: right; }
+
+/* ---------- Telefon Araması Planla ---------- */
+.call-plan-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px; }
+.call-plan-name { font-size: 16px; font-weight: 700; color: #1f2430; }
+.call-plan-email { font-size: 12.5px; color: var(--muted); margin-top: 2px; }
+.call-plan-dial { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.call-plan-links { display: flex; flex-direction: column; gap: 8px; margin: 4px 0 4px; }
+
+/* ---------- Arama devam ediyor ekranı ---------- */
+.in-call-screen { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 20px 0 10px; }
+.in-call-avatar {
+  width: 72px; height: 72px; border-radius: 50%; background: var(--teal-bg); color: var(--teal);
+  display: flex; align-items: center; justify-content: center; font-size: 30px; margin-bottom: 16px;
+  animation: nuspa-call-pulse 1.6s ease-in-out infinite;
+}
+.in-call-name { font-size: 17px; font-weight: 700; color: #1f2430; }
+.in-call-phone { font-size: 13.5px; color: var(--muted); margin-top: 2px; }
+.in-call-status { font-size: 12.5px; color: var(--teal); font-weight: 600; margin-top: 14px; }
+.in-call-timer { font-size: 26px; font-weight: 700; color: #1f2430; margin-top: 6px; letter-spacing: 1px; }
+@keyframes nuspa-call-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(23, 165, 137, 0.35); }
+  50% { box-shadow: 0 0 0 10px rgba(23, 165, 137, 0.12); }
+}
+.call-plan-link { display: flex; align-items: center; gap: 6px; border: none; background: none; color: var(--blue); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 0; }
+
+.followup-cards .step-icon {
+  display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  border-radius: 50%; margin: 0 auto 4px; font-size: 14px;
+}
+.followup-cards .step-card.accent-blue { border-color: #bcd3fb; }
+.followup-cards .step-card.accent-blue .step-icon { background: #eaf1ff; color: #2f6fed; }
+.followup-cards .step-card.accent-blue.selected { background: #eaf1ff; border-color: var(--blue); color: #2f6fed; }
+.followup-cards .step-card.accent-teal { border-color: #b9e7c9; }
+.followup-cards .step-card.accent-teal .step-icon { background: #e3f6f1; color: #17a589; }
+.followup-cards .step-card.accent-teal.selected { background: #e3f6f1; border-color: var(--teal); color: #146c37; }
+.followup-cards .step-card.accent-red { border-color: #f3bcbc; }
+.followup-cards .step-card.accent-red .step-icon { background: #fdecec; color: #d64545; }
+.followup-cards .step-card.accent-red.selected { background: #fdecec; border-color: #d64545; color: #8a1c1c; }
 
 /* Lead detay */
 .detail-body { display: flex; flex: 1; overflow: hidden; }

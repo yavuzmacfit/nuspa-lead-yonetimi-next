@@ -75,6 +75,26 @@ export function listTaskTypeDefinitions() {
   return db.NuSpaTaskTypeDefinition.all().sort((a, b) => a.id - b.id);
 }
 
+function codeFromLabel(label: string): string {
+  return label
+    .toLocaleUpperCase("tr-TR")
+    .replace(/[İI]/g, "I")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^A-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
+export function createTaskTypeDefinition(input: { label: string; description?: string; isActive?: boolean }) {
+  if (!input.label) throw badRequest("Görev adı zorunludur.");
+  return db.NuSpaTaskTypeDefinition.insert({
+    code: codeFromLabel(input.label) || `GOREV_${Date.now()}`,
+    label: input.label,
+    description: input.description ?? null,
+    isActive: input.isActive ? 1 : 0,
+  });
+}
+
 export function updateTaskTypeDefinition(id: number, input: { label?: string; description?: string; isActive?: boolean }) {
   const existing = db.NuSpaTaskTypeDefinition.find(id);
   if (!existing) throw notFound("Görev tanımı bulunamadı.");
@@ -90,16 +110,21 @@ export function listClosureReasons() {
   return db.NuSpaClosureReason.all().sort((a, b) => a.id - b.id);
 }
 
-export function createClosureReason(input: { label: string }) {
+export function createClosureReason(input: { label: string; taskName?: string | null; isActive?: boolean }) {
   if (!input.label) throw badRequest("Neden kodu adı zorunludur.");
-  return db.NuSpaClosureReason.insert({ label: input.label, isActive: 1 });
+  return db.NuSpaClosureReason.insert({
+    label: input.label,
+    taskName: input.taskName ?? null,
+    isActive: input.isActive ? 1 : 0,
+  });
 }
 
-export function updateClosureReason(id: number, input: { label?: string; isActive?: boolean }) {
+export function updateClosureReason(id: number, input: { label?: string; taskName?: string | null; isActive?: boolean }) {
   const existing = db.NuSpaClosureReason.find(id);
   if (!existing) throw notFound("Neden kodu bulunamadı.");
   return db.NuSpaClosureReason.update(id, {
     label: input.label ?? existing.label,
+    taskName: input.taskName !== undefined ? input.taskName : existing.taskName,
     isActive: input.isActive !== undefined ? (input.isActive ? 1 : 0) : existing.isActive,
   });
 }

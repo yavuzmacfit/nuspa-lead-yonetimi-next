@@ -1,8 +1,9 @@
 import { db, nowIso, NuSpaLeadRow } from "../store";
-import { badRequest } from "../errors";
+import { badRequest, notFound } from "../errors";
 import { assertNotBlacklisted, findOrCreateMemberByPhone } from "./memberService";
 import { resolveLocationForIntake } from "./locationService";
-import { LEAD_STATUS } from "../constants";
+import { closeTask, getOpenMainTask } from "./taskService";
+import { LEAD_STATUS, TASK_STATUS } from "../constants";
 
 export interface IntakePayload {
   sourceId?: number | null;
@@ -36,6 +37,39 @@ export function getLeadAggregate(leadId: number): NuSpaLeadRow | undefined {
 
 export function getLeadByMemberId(memberId: number): NuSpaLeadRow | undefined {
   return db.NuSpaLead.findOne((l) => l.memberId === memberId);
+}
+
+/**
+ * Ardıl görev olarak "Ret" seçildiğinde: lead statüsü RET'e çekilir ve
+ * varsa açık ana görev, bu ret sebebiyle tamamlanmış olarak kapatılır.
+ * Yeni bir görev AÇILMAZ (Ret bir bitiş/terminal aksiyondur).
+ */
+export function rejectLead(
+  leadId: number,
+  input: { rejectReasonLabel: string; rejectExplanation?: string | null }
+): NuSpaLeadRow {
+  const lead = db.NuSpaLead.find(leadId);
+  if (!lead) throw notFound("Lead bulunamadı.");
+  if (!input.rejectReasonLabel) throw badRequest("Ret sebebi zorunludur.");
+
+  const reason = db.NuSpaRejectReason.findOne((r) => r.label === input.rejectReasonLabel && r.isActive === 1);
+  if (!reason) throw badRequest("Geçersiz ret sebebi.");
+  if (reason.requiresExplanation && !input.rejectExplanation) {
+    throw badRequest(`"${reason.label}" için açıklama zorunludur.`);
+  }
+
+  db.NuSpaLead.update(leadId, { status: LEAD_STATUS.RET, updatedAt: nowIso() });
+
+  const openTask = getOpenMainTask(leadId);
+  if (openTask) {
+    closeTask(openTask.id, {
+      status: TASK_STATUS.TAMAMLANDI,
+      reasonCode: input.rejectReasonLabel,
+      note: input.rejectExplanation ?? null,
+    });
+  }
+
+  return db.NuSpaLead.find(leadId)!;
 }
 
 /**

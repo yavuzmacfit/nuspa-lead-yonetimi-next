@@ -1,5 +1,5 @@
 import { Lead } from "./types";
-import { fmtDate, LEAD_STATUS_LABEL, LEAD_STATUS_PILL } from "./format";
+import { fmtDate, fmtDateTime, LEAD_STATUS_LABEL, LEAD_STATUS_PILL } from "./format";
 
 export interface LeadColumnDef {
   key: string;
@@ -81,10 +81,9 @@ export function renderLeadCell(key: string, l: Lead): React.ReactNode {
       return (
         <>
           <span className={`task-date${overdue ? " overdue" : ""}`}>
-            {fmtDate(l.openTaskDueAt)}
+            {fmtDateTime(l.openTaskDueAt).replace(",", "")}
             {overdue ? " — Gecikmiş" : ""}
           </span>
-          <span className="task-type">{l.openTaskType}</span>
         </>
       );
     }

@@ -1,11 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { useAppData } from "@/lib/AppDataContext";
 import { apiFetch } from "@/lib/apiClient";
 import ToggleIcon from "@/components/admin/ToggleIcon";
+import AddTaskTypeModal from "@/components/modals/AddTaskTypeModal";
 
 export default function TaskTypesAdminPage() {
   const { taskTypes, refetchMeta, toast } = useAppData();
+  const [showAdd, setShowAdd] = useState(false);
 
   async function toggleActive(id: number, current: number) {
     try {
@@ -20,7 +23,9 @@ export default function TaskTypesAdminPage() {
     <>
       <h1>NuSpa Görevler</h1>
       <div className="toolbar" style={{ marginBottom: 14 }}>
-        <span></span>
+        <button className="btn btn-add" onClick={() => setShowAdd(true)}>
+          Görev Ekle
+        </button>
         <span></span>
       </div>
       <table className="admin">
@@ -55,6 +60,18 @@ export default function TaskTypesAdminPage() {
           ))}
         </tbody>
       </table>
+
+      {showAdd && (
+        <AddTaskTypeModal
+          onClose={() => setShowAdd(false)}
+          onSubmit={async (values) => {
+            await apiFetch("/api/nuspa/admin/task-types", { method: "POST", body: JSON.stringify(values) });
+            setShowAdd(false);
+            toast("Kaydedildi.");
+            refetchMeta();
+          }}
+        />
+      )}
     </>
   );
 }

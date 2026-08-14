@@ -7,7 +7,6 @@ import {
   ClubMapping,
   NuSpaLocation,
   RejectReason,
-  ReleaseReason,
   SalesRep,
   Source,
   TaskTypeDefinition,
@@ -24,7 +23,6 @@ interface AppData {
   locations: NuSpaLocation[];
   sources: Source[];
   rejectReasons: RejectReason[];
-  releaseReasons: ReleaseReason[];
   taskTypes: TaskTypeDefinition[];
   closureReasons: ClosureReason[];
   clubMappings: ClubMapping[];
@@ -45,7 +43,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
   const [locations, setLocations] = useState<NuSpaLocation[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [rejectReasons, setRejectReasons] = useState<RejectReason[]>([]);
-  const [releaseReasons, setReleaseReasons] = useState<ReleaseReason[]>([]);
   const [taskTypes, setTaskTypes] = useState<TaskTypeDefinition[]>([]);
   const [closureReasons, setClosureReasons] = useState<ClosureReason[]>([]);
   const [clubMappings, setClubMappings] = useState<ClubMapping[]>([]);
@@ -70,15 +67,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
     setLocations(locationsRes);
     setSources(sourcesRes);
 
-    const [rejectReasonsRes, releaseReasonsRes, taskTypesRes, closureReasonsRes, clubMappingsRes] = await Promise.all([
+    const [rejectReasonsRes, taskTypesRes, closureReasonsRes, clubMappingsRes] = await Promise.all([
       apiFetch<RejectReason[]>("/api/nuspa/admin/reject-reasons"),
-      apiFetch<ReleaseReason[]>("/api/nuspa/meta/release-reasons"),
       apiFetch<TaskTypeDefinition[]>("/api/nuspa/admin/task-types"),
       apiFetch<ClosureReason[]>("/api/nuspa/admin/closure-reasons"),
       apiFetch<ClubMapping[]>("/api/nuspa/admin/club-mappings"),
     ]);
     setRejectReasons(rejectReasonsRes);
-    setReleaseReasons(releaseReasonsRes);
     setTaskTypes(taskTypesRes);
     setClosureReasons(closureReasonsRes);
     setClubMappings(clubMappingsRes);
@@ -115,7 +110,6 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
       locations,
       sources,
       rejectReasons,
-      releaseReasons,
       taskTypes,
       closureReasons,
       clubMappings,
@@ -128,7 +122,7 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
         await loadMeta();
       },
     }),
-    [reps, locations, sources, rejectReasons, releaseReasons, taskTypes, closureReasons, clubMappings, currentRepId, setCurrentRepId, ready, error, toast, loadMeta]
+    [reps, locations, sources, rejectReasons, taskTypes, closureReasons, clubMappings, currentRepId, setCurrentRepId, ready, error, toast, loadMeta]
   );
 
   return (

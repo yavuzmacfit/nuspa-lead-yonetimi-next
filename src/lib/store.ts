@@ -123,13 +123,6 @@ export interface NuSpaRejectReasonRow {
   isActive: number;
 }
 
-export interface NuSpaReleaseReasonRow {
-  id: number;
-  code: string;
-  label: string;
-  isActive: number;
-}
-
 export interface NuSpaTaskTypeDefinitionRow {
   id: number;
   code: string;
@@ -141,6 +134,7 @@ export interface NuSpaTaskTypeDefinitionRow {
 export interface NuSpaClosureReasonRow {
   id: number;
   label: string;
+  taskName: string | null;
   isActive: number;
 }
 
@@ -253,7 +247,6 @@ export interface Store {
   NuSpaSource: Table<NuSpaSourceRow>;
   NuSpaSourceDetail: Table<NuSpaSourceDetailRow>;
   NuSpaRejectReason: Table<NuSpaRejectReasonRow>;
-  NuSpaReleaseReason: Table<NuSpaReleaseReasonRow>;
   NuSpaTaskTypeDefinition: Table<NuSpaTaskTypeDefinitionRow>;
   NuSpaClosureReason: Table<NuSpaClosureReasonRow>;
   NuSpaClubLocationMapping: Table<NuSpaClubLocationMappingRow>;
@@ -275,7 +268,6 @@ function createStore(): Store {
     NuSpaSource: new Table<NuSpaSourceRow>(),
     NuSpaSourceDetail: new Table<NuSpaSourceDetailRow>(),
     NuSpaRejectReason: new Table<NuSpaRejectReasonRow>(),
-    NuSpaReleaseReason: new Table<NuSpaReleaseReasonRow>(),
     NuSpaTaskTypeDefinition: new Table<NuSpaTaskTypeDefinitionRow>(),
     NuSpaClosureReason: new Table<NuSpaClosureReasonRow>(),
     NuSpaClubLocationMapping: new Table<NuSpaClubLocationMappingRow>(),

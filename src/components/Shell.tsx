@@ -8,7 +8,6 @@ import { useAppData } from "@/lib/AppDataContext";
 const SUBMENU_ITEMS = [
   { href: "/leads", label: "NuSpa Aday Üye" },
   { href: "/calendar", label: "Takvim" },
-  { href: "/lost-leads", label: "Üzerimden Giden Leadler" },
 ];
 
 const SYSADMIN_ITEMS = [
@@ -25,7 +24,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
   const [sysadminOpen, setSysadminOpen] = useState(true);
 
   const currentRep = reps.find((r) => r.id === currentRepId);
-  const isNuspaScreen = pathname.startsWith("/leads") || pathname.startsWith("/calendar") || pathname.startsWith("/lost-leads") || pathname.startsWith("/admin");
+  const isNuspaScreen = pathname.startsWith("/leads") || pathname.startsWith("/calendar") || pathname.startsWith("/admin");
 
   return (
     <div className="app-frame">

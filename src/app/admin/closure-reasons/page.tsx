@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAppData } from "@/lib/AppDataContext";
 import { apiFetch } from "@/lib/apiClient";
 import ToggleIcon from "@/components/admin/ToggleIcon";
-import InlineForm from "@/components/admin/InlineForm";
+import AddClosureReasonModal from "@/components/modals/AddClosureReasonModal";
 
 export default function ClosureReasonsAdminPage() {
   const { closureReasons, refetchMeta, toast } = useAppData();
@@ -38,23 +38,12 @@ export default function ClosureReasonsAdminPage() {
         </button>
         <span></span>
       </div>
-      {showAdd && (
-        <InlineForm
-          fields={[{ id: "label", label: "Ad" }]}
-          onCancel={() => setShowAdd(false)}
-          onSubmit={async (vals) => {
-            await apiFetch("/api/nuspa/admin/closure-reasons", { method: "POST", body: JSON.stringify(vals) });
-            setShowAdd(false);
-            refetchMeta();
-          }}
-        />
-      )}
       <table className="admin">
         <thead>
           <tr>
             <th>ID</th>
-            <th>Ad</th>
-            <th>Açıklama</th>
+            <th>Görev Adı</th>
+            <th>Neden Kodu</th>
             <th>Aktiflik</th>
             <th>Düzenle</th>
             <th>Sil</th>
@@ -64,10 +53,10 @@ export default function ClosureReasonsAdminPage() {
           {closureReasons.map((r) => (
             <tr key={r.id}>
               <td>{r.id}</td>
+              <td>{r.taskName || "—"}</td>
               <td>
                 <b>{r.label}</b>
               </td>
-              <td>—</td>
               <td>
                 <ToggleIcon active={r.isActive} />
               </td>
@@ -85,6 +74,18 @@ export default function ClosureReasonsAdminPage() {
           ))}
         </tbody>
       </table>
+
+      {showAdd && (
+        <AddClosureReasonModal
+          onClose={() => setShowAdd(false)}
+          onSubmit={async (values) => {
+            await apiFetch("/api/nuspa/admin/closure-reasons", { method: "POST", body: JSON.stringify(values) });
+            setShowAdd(false);
+            toast("Kaydedildi.");
+            refetchMeta();
+          }}
+        />
+      )}
     </>
   );
 }

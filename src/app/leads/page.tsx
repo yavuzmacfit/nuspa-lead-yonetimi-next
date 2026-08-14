@@ -6,13 +6,19 @@ import { useAppData } from "@/lib/AppDataContext";
 import { apiFetch } from "@/lib/apiClient";
 import { Lead } from "@/lib/types";
 import { LEAD_COLUMN_DEFS, loadVisibleLeadColumns, renderLeadCell } from "@/lib/leadColumns";
+import { loadVisibleLeadFilters } from "@/lib/leadFilters";
 import ColumnSettingsPanel from "@/components/leads/ColumnSettingsPanel";
+import FilterSettingsPanel from "@/components/leads/FilterSettingsPanel";
+import RowActionMenu from "@/components/leads/RowActionMenu";
+import TaskTypeIconButton from "@/components/leads/TaskTypeIconButton";
 import ManualEntryModal from "@/components/modals/ManualEntryModal";
 import CallResultModal, { PendingCallActivity } from "@/components/modals/CallResultModal";
 import LeadDetailModal from "@/components/modals/LeadDetailModal";
+import SchedulePhoneCallModal from "@/components/modals/SchedulePhoneCallModal";
 
 type ModalState =
   | { kind: "manualEntry" }
+  | { kind: "schedulePhoneCall"; leadId: number; closingTaskId?: number | null }
   | { kind: "callResult"; ctx: PendingCallActivity }
   | { kind: "leadDetail"; leadId: number }
   | null;
@@ -24,6 +30,7 @@ export default function LeadsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<string[]>([]);
+  const [visibleFilters, setVisibleFilters] = useState<string[]>([]);
   const [modal, setModal] = useState<ModalState>(null);
 
   const [status, setStatus] = useState("");
@@ -38,6 +45,7 @@ export default function LeadsPage() {
 
   useEffect(() => {
     setVisibleColumns(loadVisibleLeadColumns());
+    setVisibleFilters(loadVisibleLeadFilters());
   }, []);
 
   const loadLeads = useCallback(async () => {
@@ -84,6 +92,22 @@ export default function LeadsPage() {
 
   const visibleDefs = LEAD_COLUMN_DEFS.filter((c) => visibleColumns.includes(c.key));
 
+  function handleVisibleFiltersChange(next: string[]) {
+    const hidden = visibleFilters.filter((k) => !next.includes(k));
+    hidden.forEach((key) => {
+      if (key === "statu") setStatus("");
+      if (key === "kaynak") setKaynak("");
+      if (key === "kampanya") setKampanya("");
+      if (key === "rep") setRep("");
+      if (key === "tarih") {
+        setDateField("createdAt");
+        setDateFrom("");
+        setDateTo("");
+      }
+    });
+    setVisibleFilters(next);
+  }
+
   function clearFilters() {
     setStatus("");
     setKaynak("");
@@ -93,27 +117,6 @@ export default function LeadsPage() {
     setDateFrom("");
     setDateTo("");
     setSearch("");
-  }
-
-  async function startCallFlow(leadId: number) {
-    try {
-      const result = await apiFetch<{ activity: { id: number } }>(`/api/nuspa/leads/${leadId}/call`, {
-        method: "POST",
-        repId: currentRepId,
-      });
-      const lead = leads.find((l) => l.id === leadId);
-      setModal({
-        kind: "callResult",
-        ctx: {
-          leadId,
-          activityId: result.activity.id,
-          leadSource: lead ? `${lead.lastSourceName || "Bilinmiyor"}${lead.lastSourceDetailName ? " – " + lead.lastSourceDetailName : ""}` : "",
-          phone: lead ? `${lead.gsmAreaCode} ${lead.gsmNo}` : "",
-        },
-      });
-    } catch (err) {
-      toast(err instanceof Error ? err.message : String(err), true);
-    }
   }
 
   async function lookupLeadByPhone() {
@@ -144,94 +147,117 @@ export default function LeadsPage() {
 
   return (
     <>
-      <h1>NuSpa Aday Üye</h1>
-      <p className="subtitle">Kullanıcının lokasyon kapsamındaki havuz + sahipli NuSpa lead&apos;leri (PRD Bölüm 8.1)</p>
+      <div className="leads-header">
+        <div>
+          <h1>NuSpa Aday Üye</h1>
+          <p className="subtitle">Kullanıcının lokasyon kapsamındaki havuz + sahipli NuSpa lead&apos;leri (PRD Bölüm 8.1)</p>
+        </div>
+        <FilterSettingsPanel visible={visibleFilters} onChange={handleVisibleFiltersChange} />
+      </div>
 
       <div className="filter-bar">
-        <div className="filter-field">
-          <label>Statü</label>
-          <select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <option value="">Seçiniz</option>
-            <option value="AKTIF">Aktif</option>
-            <option value="SATIS">Satış</option>
-            <option value="RET">Ret</option>
-            <option value="PASIF">Pasif</option>
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Kaynak</label>
-          <select value={kaynak} onChange={(e) => setKaynak(e.target.value)}>
-            <option value="">Seçiniz</option>
-            {sourceOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Dij. Kampanya Adı</label>
-          <select value={kampanya} onChange={(e) => setKampanya(e.target.value)}>
-            <option value="">Seçiniz</option>
-            {campaignOptions.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Tag Anahtarı (Key)</label>
-          <select defaultValue="">
-            <option value="">Seçiniz</option>
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Tag Değeri (Value)</label>
-          <select defaultValue="">
-            <option value="">Seçiniz</option>
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Satış Temsilcisi</label>
-          <select value={rep} onChange={(e) => setRep(e.target.value)}>
-            <option value="">Seçiniz</option>
-            <option value="POOL">Havuzda (Sahipsiz)</option>
-            {reps.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Görev</label>
-          <select defaultValue="">
-            <option value="">Seçiniz</option>
-            {taskTypes
-              .filter((t) => t.isActive)
-              .map((t) => (
-                <option key={t.code} value={t.code}>
-                  {t.label}
+        {visibleFilters.includes("statu") && (
+          <div className="filter-field">
+            <label>Statü</label>
+            <select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <option value="">Seçiniz</option>
+              <option value="AKTIF">Aktif</option>
+              <option value="SATIS">Satış</option>
+              <option value="RET">Ret</option>
+              <option value="PASIF">Pasif</option>
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("kaynak") && (
+          <div className="filter-field">
+            <label>Kaynak</label>
+            <select value={kaynak} onChange={(e) => setKaynak(e.target.value)}>
+              <option value="">Seçiniz</option>
+              {sourceOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
                 </option>
               ))}
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Tarih</label>
-          <select value={dateField} onChange={(e) => setDateField(e.target.value)}>
-            <option value="createdAt">Oluşturma Tarihi</option>
-            <option value="updatedAt">Güncelleme Tarihi</option>
-          </select>
-        </div>
-        <div className="filter-field">
-          <label>Başlangıç</label>
-          <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
-        </div>
-        <div className="filter-field">
-          <label>Bitiş</label>
-          <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
-        </div>
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("kampanya") && (
+          <div className="filter-field">
+            <label>Dij. Kampanya Adı</label>
+            <select value={kampanya} onChange={(e) => setKampanya(e.target.value)}>
+              <option value="">Seçiniz</option>
+              {campaignOptions.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("tagKey") && (
+          <div className="filter-field">
+            <label>Tag Anahtarı (Key)</label>
+            <select defaultValue="">
+              <option value="">Seçiniz</option>
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("tagValue") && (
+          <div className="filter-field">
+            <label>Tag Değeri (Value)</label>
+            <select defaultValue="">
+              <option value="">Seçiniz</option>
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("rep") && (
+          <div className="filter-field">
+            <label>Satış Temsilcisi</label>
+            <select value={rep} onChange={(e) => setRep(e.target.value)}>
+              <option value="">Seçiniz</option>
+              <option value="POOL">Havuzda (Sahipsiz)</option>
+              {reps.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("gorev") && (
+          <div className="filter-field">
+            <label>Görev</label>
+            <select defaultValue="">
+              <option value="">Seçiniz</option>
+              {taskTypes
+                .filter((t) => t.isActive)
+                .map((t) => (
+                  <option key={t.code} value={t.code}>
+                    {t.label}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+        {visibleFilters.includes("tarih") && (
+          <>
+            <div className="filter-field">
+              <label>Tarih</label>
+              <select value={dateField} onChange={(e) => setDateField(e.target.value)}>
+                <option value="createdAt">Oluşturma Tarihi</option>
+                <option value="updatedAt">Güncelleme Tarihi</option>
+              </select>
+            </div>
+            <div className="filter-field">
+              <label>Başlangıç</label>
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+            </div>
+            <div className="filter-field">
+              <label>Bitiş</label>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+            </div>
+          </>
+        )}
         <div className="filter-actions">
           <button className="btn btn-ghost" onClick={clearFilters}>
             Temizle
@@ -250,9 +276,6 @@ export default function LeadsPage() {
           <button className="btn btn-soft-warn" onClick={() => toast("Bu özellik yakında eklenecek.")}>
             Kişileri Dışa Aktar
           </button>
-          <button className="btn btn-soft-warn" onClick={() => toast("Bu özellik yakında eklenecek.")}>
-            Toplu Güncelle
-          </button>
         </div>
         <div className="action-bar-right">
           <div className="lookup-field">
@@ -268,7 +291,7 @@ export default function LeadsPage() {
                 onChange={(e) => setPhoneLookupInput(e.target.value)}
               />
               <button className="btn btn-add" onClick={lookupLeadByPhone}>
-                Ara
+                Bul
               </button>
             </div>
           </div>
@@ -301,7 +324,7 @@ export default function LeadsPage() {
                 {visibleDefs.map((c) => (
                   <th key={c.key}>{c.label}</th>
                 ))}
-                <th></th>
+                <th className="sticky-action-col"></th>
               </tr>
             </thead>
             <tbody>
@@ -312,18 +335,45 @@ export default function LeadsPage() {
                     {visibleDefs.map((c) => (
                       <td key={c.key}>{renderLeadCell(c.key, l)}</td>
                     ))}
-                    <td className="row-action">
-                      <button
-                        className="action-btn primary"
-                        disabled={disabledCall}
-                        title={disabledCall ? "Başka SD'ye atanmış" : undefined}
-                        onClick={() => startCallFlow(l.id)}
-                      >
-                        Ara
-                      </button>
-                      <button className="action-btn" onClick={() => setModal({ kind: "leadDetail", leadId: l.id })}>
-                        Detay
-                      </button>
+                    <td className="row-action sticky-action-col">
+                      {l.openTaskType ? (
+                        <TaskTypeIconButton
+                          taskType={l.openTaskType}
+                          title={l.openTaskType === "SATIS" ? "Satış Görüşmesi (açık görev)" : "Telefon Araması (açık görev)"}
+                        />
+                      ) : (
+                        <button
+                          className="action-btn primary"
+                          disabled={disabledCall}
+                          title={disabledCall ? "Başka SD'ye atanmış" : undefined}
+                          onClick={() => setModal({ kind: "schedulePhoneCall", leadId: l.id })}
+                        >
+                          Ara
+                        </button>
+                      )}
+                      <RowActionMenu
+                        items={
+                          l.openTaskType
+                            ? [
+                                {
+                                  icon: "✓",
+                                  label: "Görevi Tamamla",
+                                  onClick: () => setModal({ kind: "schedulePhoneCall", leadId: l.id, closingTaskId: l.openTaskId }),
+                                },
+                                { icon: "🕐", label: "İşlem Tarihçesi", onClick: () => setModal({ kind: "leadDetail", leadId: l.id }) },
+                                { icon: "✉️", label: "Sms Gönder", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                { icon: "ℹ️", label: "Ek Bilgiler", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                { icon: "✏️", label: "Aday Üye Güncelle", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                              ]
+                            : [
+                                { icon: "📞", label: "Arama Görevi Planla", onClick: () => setModal({ kind: "schedulePhoneCall", leadId: l.id }) },
+                                { icon: "🛒", label: "Satış Görüşmesi", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                { icon: "🕐", label: "İşlem Tarihçesi", onClick: () => setModal({ kind: "leadDetail", leadId: l.id }) },
+                                { icon: "ℹ️", label: "Ek Bilgiler", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                { icon: "✏️", label: "Aday Üye Güncelle", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                              ]
+                        }
+                      />
                     </td>
                   </tr>
                 );
@@ -342,6 +392,24 @@ export default function LeadsPage() {
           }}
         />
       )}
+      {modal?.kind === "schedulePhoneCall" &&
+        (() => {
+          const lead = leads.find((l) => l.id === modal.leadId);
+          if (!lead) return null;
+          return (
+            <SchedulePhoneCallModal
+              lead={lead}
+              closingTaskId={modal.closingTaskId}
+              onClose={() => setModal(null)}
+              onCallStarted={(ctx) => setModal({ kind: "callResult", ctx })}
+              onTaskScheduled={() => {
+                setModal(null);
+                loadLeads();
+              }}
+              onShowHistory={() => setModal({ kind: "leadDetail", leadId: lead.id })}
+            />
+          );
+        })()}
       {modal?.kind === "callResult" && (
         <CallResultModal
           ctx={modal.ctx}
