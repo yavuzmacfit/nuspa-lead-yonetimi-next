@@ -91,6 +91,7 @@ export interface Lead {
   lastSmsPermission: number;
   openTaskType: string | null;
   openTaskDueAt: string | null;
+  otpVerifiedAt: string | null;
 }
 
 export interface TaskRow {

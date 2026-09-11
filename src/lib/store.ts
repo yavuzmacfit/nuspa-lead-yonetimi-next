@@ -154,6 +154,7 @@ export interface NuSpaLeadRow {
   openTaskId: number | null;
   createdAt: string;
   updatedAt: string;
+  otpVerifiedAt?: string | null;
 }
 
 export interface NuSpaLeadTransactionRow {
@@ -239,6 +240,17 @@ export interface FitnessTaskMockRow {
   endAt: string;
 }
 
+export interface NuSpaOtpChallengeRow {
+  id: number;
+  leadId: number;
+  code: string;
+  attempts: number;
+  verified: number;
+  expiresAt: string;
+  createdAt: string;
+  verifiedAt: string | null;
+}
+
 export interface Store {
   Member: Table<MemberRow>;
   BlacklistEntry: Table<BlacklistEntryRow>;
@@ -257,6 +269,7 @@ export interface Store {
   NuSpaTask: Table<NuSpaTaskRow>;
   NuSpaSaleFlow: Table<NuSpaSaleFlowRow>;
   FitnessTaskMock: Table<FitnessTaskMockRow>;
+  NuSpaOtpChallenge: Table<NuSpaOtpChallengeRow>;
 }
 
 function createStore(): Store {
@@ -278,6 +291,7 @@ function createStore(): Store {
     NuSpaTask: new Table<NuSpaTaskRow>(),
     NuSpaSaleFlow: new Table<NuSpaSaleFlowRow>(),
     FitnessTaskMock: new Table<FitnessTaskMockRow>(),
+    NuSpaOtpChallenge: new Table<NuSpaOtpChallengeRow>(),
   };
 }
 

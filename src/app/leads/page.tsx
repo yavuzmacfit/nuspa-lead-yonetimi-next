@@ -15,12 +15,16 @@ import ManualEntryModal from "@/components/modals/ManualEntryModal";
 import CallResultModal, { PendingCallActivity } from "@/components/modals/CallResultModal";
 import LeadDetailModal from "@/components/modals/LeadDetailModal";
 import SchedulePhoneCallModal from "@/components/modals/SchedulePhoneCallModal";
+import SalesMeetingModal from "@/components/modals/SalesMeetingModal";
+import SendOtpModal from "@/components/modals/SendOtpModal";
 
 type ModalState =
   | { kind: "manualEntry" }
   | { kind: "schedulePhoneCall"; leadId: number; closingTaskId?: number | null }
   | { kind: "callResult"; ctx: PendingCallActivity }
   | { kind: "leadDetail"; leadId: number }
+  | { kind: "salesMeeting"; leadId: number }
+  | { kind: "sendOtp"; leadId: number }
   | null;
 
 export default function LeadsPage() {
@@ -361,14 +365,21 @@ export default function LeadsPage() {
                                   onClick: () => setModal({ kind: "schedulePhoneCall", leadId: l.id, closingTaskId: l.openTaskId }),
                                 },
                                 { icon: "🕐", label: "İşlem Tarihçesi", onClick: () => setModal({ kind: "leadDetail", leadId: l.id }) },
-                                { icon: "✉️", label: "Sms Gönder", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                { icon: "✉️", label: "Sms Gönder", onClick: () => setModal({ kind: "sendOtp", leadId: l.id }) },
                                 { icon: "ℹ️", label: "Ek Bilgiler", onClick: () => toast("Bu özellik yakında eklenecek.") },
                                 { icon: "✏️", label: "Aday Üye Güncelle", onClick: () => toast("Bu özellik yakında eklenecek.") },
                               ]
                             : [
                                 { icon: "📞", label: "Arama Görevi Planla", onClick: () => setModal({ kind: "schedulePhoneCall", leadId: l.id }) },
-                                { icon: "🛒", label: "Satış Görüşmesi", onClick: () => toast("Bu özellik yakında eklenecek.") },
+                                {
+                                  icon: "🛒",
+                                  label: "Satış Görüşmesi",
+                                  disabled: !l.otpVerifiedAt,
+                                  title: l.otpVerifiedAt ? undefined : "Önce \"Sms Gönder\" ile OTP doğrulaması yapılmalı",
+                                  onClick: () => setModal({ kind: "salesMeeting", leadId: l.id }),
+                                },
                                 { icon: "🕐", label: "İşlem Tarihçesi", onClick: () => setModal({ kind: "leadDetail", leadId: l.id }) },
+                                { icon: "✉️", label: "Sms Gönder", onClick: () => setModal({ kind: "sendOtp", leadId: l.id }) },
                                 { icon: "ℹ️", label: "Ek Bilgiler", onClick: () => toast("Bu özellik yakında eklenecek.") },
                                 { icon: "✏️", label: "Aday Üye Güncelle", onClick: () => toast("Bu özellik yakında eklenecek.") },
                               ]
@@ -421,6 +432,36 @@ export default function LeadsPage() {
         />
       )}
       {modal?.kind === "leadDetail" && <LeadDetailModal leadId={modal.leadId} onClose={() => setModal(null)} />}
+      {modal?.kind === "salesMeeting" &&
+        (() => {
+          const lead = leads.find((l) => l.id === modal.leadId);
+          if (!lead) return null;
+          return (
+            <SalesMeetingModal
+              lead={lead}
+              onClose={() => setModal(null)}
+              onSuccess={() => {
+                setModal(null);
+                loadLeads();
+              }}
+            />
+          );
+        })()}
+      {modal?.kind === "sendOtp" &&
+        (() => {
+          const lead = leads.find((l) => l.id === modal.leadId);
+          if (!lead) return null;
+          return (
+            <SendOtpModal
+              lead={lead}
+              onClose={() => setModal(null)}
+              onSuccess={() => {
+                setModal(null);
+                loadLeads();
+              }}
+            />
+          );
+        })()}
     </>
   );
 }

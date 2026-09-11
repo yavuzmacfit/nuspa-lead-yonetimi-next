@@ -50,7 +50,11 @@ export function makeManualSale(
     return { saleFlow, lead: db.NuSpaLead.find(leadId), followUpTask: followUp };
   }
 
-  db.NuSpaLead.update(leadId, { status: "SATIS", updatedAt: nowIso() });
+  db.NuSpaLead.update(leadId, {
+    status: "SATIS",
+    locationId: input.locationId ?? lead.locationId,
+    updatedAt: nowIso(),
+  });
   if (openTask) {
     closeTask(openTask.id, { status: TASK_STATUS.TAMAMLANDI, reasonCode: "SATIS_TAMAMLANDI" });
   }

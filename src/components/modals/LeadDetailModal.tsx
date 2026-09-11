@@ -31,11 +31,13 @@ interface LeadDetail {
   };
   transactions: { createdAt: string; sourceName: string | null }[];
   activities: {
+    type: string;
     startedAt: string | null;
     createdAt: string;
     endedAt: string | null;
     callResult: string | null;
     nextStep: string | null;
+    note: string | null;
     salesRepName: string | null;
   }[];
   tasks: { createdAt: string; dueAt: string | null; type: string; status: string; assignedToName: string | null }[];
@@ -75,6 +77,16 @@ export default function LeadDetailModal({ leadId, onClose }: { leadId: number; o
     });
   });
   detail.activities.forEach((a) => {
+    if (a.type === "SMS_REZERVASYON_LINKI") {
+      events.push({
+        at: a.startedAt || a.createdAt,
+        title: "SMS: Rezervasyon Linki Gönderildi",
+        meta: `${fmtDateTime(a.startedAt || a.createdAt)} — ${a.salesRepName || "—"}`,
+        detail: a.note || "",
+        dot: "green",
+      });
+      return;
+    }
     events.push({
       at: a.startedAt || a.createdAt,
       title: a.endedAt ? `Arama Sonucu: ${a.callResult || "—"}` : "Ara ile sahiplenildi",

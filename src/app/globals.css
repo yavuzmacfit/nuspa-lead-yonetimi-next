@@ -241,6 +241,8 @@ tbody tr:hover .sticky-action-col { background: #fafbfe; }
   padding: 9px 10px; border-radius: 6px; font-size: 13.5px; color: var(--text); cursor: pointer; text-align: left;
 }
 .row-menu-item:hover { background: #fafbfc; }
+.row-menu-item:disabled { opacity: 0.4; cursor: not-allowed; }
+.row-menu-item:disabled:hover { background: none; }
 .row-menu-icon { width: 18px; text-align: center; font-size: 14px; flex-shrink: 0; }
 
 .icon-menu-btn {
@@ -473,3 +475,25 @@ table.admin thead th { font-size: 13px; font-weight: 600; color: #8a90a0; backgr
 .toast.error { background: #d64545; }
 
 .empty-state { padding: 40px; text-align: center; color: var(--muted); font-size: 13.5px; }
+
+.step-progress { display: flex; align-items: center; gap: 8px; margin-bottom: 18px; }
+.step-progress-item { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); }
+.step-progress-item .dot { width: 22px; height: 22px; border-radius: 50%; background: #f1f2f4; color: var(--muted); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.step-progress-item.done .dot { background: #e7f8ee; color: #1a9c53; }
+.step-progress-item.active .dot { background: var(--blue); color: white; }
+.step-progress-item.active { color: #1f2430; }
+.step-progress-line { flex: 1; height: 1px; background: var(--border); }
+
+.otp-code-input { font-size: 22px; font-weight: 700; letter-spacing: 6px; text-align: center; }
+.otp-actions { display: flex; justify-content: center; gap: 10px; margin-top: 14px; }
+.otp-resend { background: none; border: none; color: var(--blue); font-size: 12.5px; font-weight: 600; cursor: pointer; padding: 6px; }
+.otp-resend:disabled { color: var(--muted); cursor: not-allowed; }
+.otp-demo-note { text-align: center; font-size: 12px; color: #b8860b; background: #fff8e6; border: 1px dashed #e5c979; border-radius: 8px; padding: 8px 12px; margin-top: 14px; }
+
+.link-preview-box { background: #fafbfc; border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; font-size: 12.5px; color: #374151; line-height: 1.6; margin: 4px 0 16px; word-break: break-all; }
+.link-preview-box strong { color: #1f2430; }
+
+.sale-confirm-box { text-align: center; padding: 10px 0 18px; }
+.sale-confirm-box .icon { font-size: 34px; margin-bottom: 8px; }
+.sale-confirm-box .title { font-size: 15px; font-weight: 700; color: #1f2430; margin-bottom: 4px; }
+.sale-confirm-box .detail { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }

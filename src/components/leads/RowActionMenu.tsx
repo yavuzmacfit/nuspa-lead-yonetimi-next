@@ -7,6 +7,8 @@ export interface RowActionMenuItem {
   icon: string;
   label: string;
   onClick: () => void;
+  disabled?: boolean;
+  title?: string;
 }
 
 export default function RowActionMenu({ items }: { items: RowActionMenuItem[] }) {
@@ -65,7 +67,10 @@ export default function RowActionMenu({ items }: { items: RowActionMenuItem[] })
                 key={i}
                 type="button"
                 className="row-menu-item"
+                disabled={item.disabled}
+                title={item.title}
                 onClick={() => {
+                  if (item.disabled) return;
                   setOpen(false);
                   item.onClick();
                 }}
